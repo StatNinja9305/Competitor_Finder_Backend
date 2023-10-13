@@ -1,0 +1,181 @@
+
+
+Date: Oct 6, 2023
+
+
+AWS EC2 Server settings:
+- OS: Ubuntu or AmazonLinux (recommended).
+- Prepare and supply a security key pair.
+- Enable Internet traffic on HTTPS and HTTP.
+- Set storage size 80GB, gp3.
+- Set memory size 8GB (required by SentenceTransformer LaBSE), 
+- Make a security group. In that group, add an inbound rule "TCP 8000" in the security tab. Set user IP in the (only) inbound rule. Set 0.0.0.0/0 for the outbound rule. My global IP at work: 114.160.67.232
+- Add the instance to the security group.
+
+=> Connect to the server.
+
+
+# Making Anaconda Environment:
+
+# Installing Miniconda.
+mkdir -p ~/miniconda3
+wget https://repo.anaconda.com/miniconda/Miniconda3-py310_23.5.1-0-Linux-x86_64.sh -O ~/miniconda3/miniconda.sh
+bash ~/miniconda3/miniconda.sh -b -u -p ~/miniconda3
+~/miniconda3/bin/conda init bash
+
+# Start a new shell.
+bash
+# Confrim the screen.
+
+# Making an env.
+conda create -n Base1 --clone base
+conda activate Base1
+
+# Installing required packages.
+pip install --upgrade pip
+pip install beautifulsoup4
+pip install scikit-learn
+pip install tldextract mtranslate langdetect
+pip install pandas numpy
+pip install dicttoxml transformers
+pip install spacy
+pip install -U ja_ginza
+
+# A workaround for making environment.
+# 1, Make a cache directory.
+# 2, Add --no-cache-dir option to pip to prevent process killing.
+my_cache_dir=$HOME/my_cache/
+mkdir ${my_cache_dir}
+export TMPDIR=${my_cache_dir}
+pip install sentence_transformers --no-cache-dir
+
+# Login-related libraries: hug, mysql, uuid, smtplib, email, passlib
+# Already installed: uuid, smtplib, email, 
+pip install hug passlib
+
+
+# Wait for 3 mins.
+
+# Check import by running this code in Python console:
+echo "
+
+import bs4
+import sklearn
+import tldextract, mtranslate, langdetect
+import pandas, numpy
+import spacy, transformers
+import sentence_transformers
+import hug, uuid, smtplib, email, passlib
+import dicttoxml
+
+
+
+"
+
+
+
+
+# Sample run:
+unzip ./niraj_modules.zip
+mkdir ./Data
+
+conda activate Base1
+ver=a13
+python ./review_hug_api_ver_${ver}.py
+
+
+hug -f ./review_hug_api_ver_${ver}.py
+
+# Copy and paste EC2's "Public IPv4 Address" of the instance.
+# Public IP:
+# http://18.179.16.30:8000/generate_output?url=https://pig-data.jp/
+
+# Testing
+# http://18.179.16.30:8000/check_server
+
+
+# Tentative plan:
+
+# Make VPC.
+
+
+# MySQL part, tentative, start.
+# For Amazon Linux:
+#sudo yum install mysql-devel
+#export MYSQLCLIENT_CFLAGS=`pkg-config mysqlclient --cflags`
+#export MYSQLCLIENT_LDFLAGS=`pkg-config mysqlclient --libs`
+
+#pkg-config --cflags mysqlclient
+#pkg-config --libs mysqlclient
+#pip install mysqlclient
+
+sudo yum update
+# Delete MariaDB files.
+sudo yum remove mariadb-*
+
+sudo yum localinstall https://dev.mysql.com/get/mysql80-community-release-el7-5.noarch.rpm
+
+sudo yum install --enablerepo=mysql80-community mysql-community-server
+
+yum list installed | grep mysql
+
+
+# MySQL part, tentative, end.
+
+
+
+# Connection.
+# Make sure that the RSA key file has a permission of 400.
+# If necessary, move your file to WSL home directory. chmod does not work in a Windows file system.
+
+
+
+# Get superuser for installing Apache
+sudo su
+
+# Install Apache:
+yum install httpd
+# Alternatively,
+#apt-get install apache2
+
+# Run and test Apache
+httpd -k start
+netstat -naptu
+
+# Open 8000 port by 
+# EC2 > Security Group > Make Security Group > Inbound Rule 1
+# Add an inbound rule to allow HTTP.
+# Select CIDR block 0.0.0.0/0 as source.
+
+
+# Web browser access:
+# # Sevice:
+http://54.238.14.236:8000/generate_output?url=https://pig-data.jp/
+
+# Here, 54.238.14.236 is the public IPv4 address of the server.
+
+
+# Making swap.
+sudo dd if=/dev/zero of=/swapfile bs=1M count=2048
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+
+# Turning on swap.
+sudo swapon /swapfile
+
+# Confirm swap.
+sudo swapon -s
+free -h
+
+
+
+# Debugging for LaBSE:
+# # On Python:
+
+from sentence_transformers import SentenceTransformer, util
+import spacy
+model = SentenceTransformer('sentence-transformers/LaBSE')
+
+
+
+# End
